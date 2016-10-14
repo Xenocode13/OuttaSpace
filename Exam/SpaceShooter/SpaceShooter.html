@@ -1,0 +1,833 @@
+<!doctype html>
+	<head>
+		<meta charset="UTF-8">
+		<title>Outta Space</title>
+		<link href="style.css" rel="stylesheet" type="text/css">
+	</head>
+
+	<body>
+		<div align="center">
+			<canvas id="game-canvas" width="700" height="500"></canvas>
+		</div>
+		<script src="../pixi.js/bin/pixi.js"></script>
+
+		<script>
+			/*window.onload = window.onresize = function() {
+		    var canvas = document.getElementById('canvas');
+		    canvas.width = window.innerWidth * 0.8;
+		    canvas.height = window.innerHeight * 0.8;}*/
+		</script>
+
+		<script>
+
+			var Container = PIXI.Container,
+				autoDetectRenderer = PIXI.autoDetectRenderer;
+				loader = PIXI.loader,
+				resources = PIXI.loader.resources,
+				TextureCache = PIXI.utils.TextureCache,
+				Texture = PIXI.Texture,
+				Sprite = PIXI.Sprite,
+				Graphics = PIXI.Graphics;
+
+				//create PIXI stage and renderer and add to DOM
+				console.log("Create stage!");
+				var stage = new Container(),
+					renderer = autoDetectRenderer(700, 500, {view:document.getElementById("game-canvas")});
+					
+				document.body.appendChild(renderer.view);
+
+				loader
+					.add("images/spaceship1.png")
+					.add("images/spaceship2.png")
+					.add("images/enemyship.png")
+					.add("images/playerfire.png")
+					.add("images/enemyfire.png")
+					.add("images/arrow-left.png")
+					.add("images/arrow-right.png")
+					.add("images/explosion1.png")
+					.add("images/explosion2.png")
+					.add("images/explosion3.png")
+					.add("images/explosion4.png")
+					.add("images/explosion5.png")
+					.add("images/explosion6.png")
+					.add("images/explosion7.png")
+					.add("images/explosion8.png")
+					.add("images/explosion9.png")
+					.add("images/explosion10.png")
+					.add("images/explosion11.png")
+					.add("images/explosion12.png")
+					.add("images/explosion13.png")
+					.add("images/explosion14.png")
+					.add("images/explosion15.png")
+					.add("images/explosion16.png")
+					.add("images/explosion17.png")
+					.add("images/explosion18.png")
+					.add("images/explosion19.png")
+					.add("images/explosion20.png")
+					.add("images/explosion21.png")
+					.add("images/explosion22.png")
+					.add("images/explosion23.png")
+					.add("images/explosion24.png")
+					.add("images/explosion25.png")
+					.add("images/explosion26.png")
+					.add("images/explosion27.png")
+					.add("images/explosion28.png")
+					.add("images/explosion29.png")
+					.add("images/explosion30.png")
+					.add("images/explosion31.png")
+					.add("images/explosion32.png")
+					.add("images/explosion33.png")
+					.load(setup);
+
+
+				//Define multiple vars
+				var player, enemy = [], pfire = [], efire = [], firing, livesTxt, wavesTxt, state, lives, livesNo, wavesNo, splashScene, startLock, startup, splashText, splashImg, gameScene, endGame, gameOverScene, gameoverTxt, gameoverTxt2, titleScene, title, titleTxt, titleTxt2, titleText3, titleText4, titleText5, titleShip, arrowLeft, arrowRight, shipNo, bgScene, explosion;
+
+				function setup(){
+					//Bg container layer
+					bgScene = new Container();
+					stage.addChild(bgScene);
+
+					//Setup game scene
+					gameScene = new Container();
+					stage.addChild(gameScene);
+					//gameScene.visible = false; //hide game scene in startup
+
+					//create bg
+					var spaceTexture = Texture.fromImage("images/space-texture.jpg");
+					space = new PIXI.extras.TilingSprite(spaceTexture, 700, 500);
+					space.position.x = 0;
+					space.position.y = 0;
+					space.tilePosition.x = 0;
+					space.tilePosition.y = 0;
+					bgScene.addChild(space);
+
+					wavesNo = 1; //set first wave
+
+					//Create enemy wave
+					if(wavesNo === 1){
+						for(var i = 0; i < 15; i++){
+							enemy[i] = new Sprite(resources["images/enemyship.png"].texture);
+							enemy[i].x = (800 + (400 * i));
+							enemy[i].y = (50 + ((Math.floor((Math.random() * 400) + 1)))).clamp(15, 400);
+							gameScene.addChild(enemy[i]);
+						}
+					}
+
+					//Create fires here
+					pfire[0] = new Sprite(resources["images/playerfire.png"].texture);
+					efire[0] = new Sprite(resources["images/enemyfire.png"].texture);
+					pfire[0].visible = false;
+					efire[0].visible = false;
+					gameScene.addChild(pfire[0]);
+					gameScene.addChild(efire[0]);
+
+					//Create player
+					player = new Sprite(resources["images/spaceship1.png"].texture);
+					player.x = 10;
+					player.y = 350;
+					player.vx = 0;
+					player.vy = 0;
+					gameScene.addChild(player);
+
+					//Get keyboard arrow keys
+					var left = keyboard(37),
+						up = keyboard(38),
+						right = keyboard(39),
+						down = keyboard(40),
+						spacebar = keyboard(32),
+						xbtn = keyboard(88);
+
+						//renderer.plugins.interaction.autoPreventDefault = false
+
+					//Left arrow key press method
+					left.press = function(){
+						if(title === true){
+							//change ship
+							if(shipNo === 1){
+								//titleShip.setTexture(resources["images/spaceship2.png"].texture);
+								titleShip.texture = Texture.fromImage("images/spaceship2.png");
+								shipNo = 2;
+							}
+							else if(shipNo === 2){
+								//titleShip.setTexture(resources["images/spaceship1.png"].texture);
+								titleShip.texture = Texture.fromImage("images/spaceship1.png");
+								shipNo = 1;
+							}
+						} else{
+							if(startup === false){
+								//Change player's velocity
+								player.vx = (-5 - wavesNo).clamp(-7, -5);
+								player.vy = 0;
+							}
+							
+						}
+					}
+
+					//Left arrow key release method
+					left.release = function(){
+						if(title === true){
+
+						} else{
+							if(startup === false){
+								//If arrow key is released 
+								//and player isn't moving vertically
+								//Stop player
+								if(!right.isDown && player.vy === 0){
+									player.vx = 0;
+								}
+							}
+							
+						}
+					};
+
+					//Up
+					up.press = function(){
+						player.vx = 0;
+						player.vy = (-5 - wavesNo).clamp(-7, -5);
+					};
+					up.release = function(){
+						if(!down.isDown && player.vx === 0){
+							player.vy = 0;
+						}
+					};
+
+					//Right
+					right.press = function(){
+						if(title === true){
+							//change ship
+							if(shipNo === 1){
+								//titleShip.setTexture(resources["images/spaceship2.png"].texture);
+								titleShip.texture = Texture.fromImage("images/spaceship2.png");
+								shipNo = 2;
+							}
+							else if(shipNo === 2){
+								//titleShip.setTexture(resources["images/spaceship1.png"].texture);
+								titleShip.texture = Texture.fromImage("images/spaceship1.png");
+								shipNo = 1;
+							}
+						} else{
+							player.vx = (5 + wavesNo).clamp(5, 7);
+							player.vy = 0;
+						}
+						
+					};
+					right.release = function(){
+						if(title === true){
+
+						} else{
+							if(startup === false){
+								if(!left.isDown && player.vy === 0){
+									player.vx = 0;
+								}
+							}
+						}
+						
+					};
+
+					//Down
+					down.press = function(){
+						player.vx = 0;
+						player.vy = (5 + wavesNo).clamp(5, 7);
+					};
+					down.release = function(){
+						if(!up.isDown && player.vx === 0){
+							player.vy = 0;
+						}
+					};
+
+					//Spacebar fire
+					spacebar.press = function(){
+						if(title === true){
+							if(shipNo === 1){
+								//player.setTexture(resources["images/spaceship1.png"].texture);
+								player.texture = Texture.fromImage("images/spaceship1.png");
+							} 
+							else if(shipNo === 2){
+								//player.setTexture(resources["images/spaceship2.png"].texture);
+								player.texture = Texture.fromImage("images/spaceship2.png");
+							}
+
+							titleScene.visible = false;
+							gameScene.visible = true;
+							title = false;
+						} else{
+							if(startup === false){
+								firing = true;
+							}
+							if(endGame === true){
+								location.reload(); //reload app
+							}
+						}
+					};
+
+					spacebar.release = function(){
+						if(title === true){
+							
+						}
+						else{
+							if(startup === false){
+								firing = false;
+							}
+						}
+					};
+
+
+					//X button
+					xbtn.press = function(){
+						//Game quit
+						if(title === true){
+							console.log("QUIT!");
+							window.setTimeout(closeWindow(), 1000); //redirect to pixi.js website
+						}
+					};
+
+					xbtn.release = function(){
+
+					};
+
+
+					//Create text sprite
+					livesNo = 3; //set max lives 
+					livesTxt = new PIXI.Text( 
+						"Lives: " + livesNo.toString(), 
+						{font: "18px LCD solid", fill:"white"} 
+					);
+					livesTxt.position.set(10, 10); 
+					gameScene.addChild(livesTxt); 
+
+					wavesTxt = new PIXI.Text(
+						"Wave: " + wavesNo.toString(),
+						{font: "18px LCD solid", fill:"white"}
+					);
+					wavesTxt.position.set(10, 40);
+					gameScene.addChild(wavesTxt);
+
+					//init game over screen
+					endGame = false; //reset end game identifier
+					gameOverScene = new Container();
+					stage.addChild(gameOverScene);
+					gameOverScene.visible = false; //hide gameover screen on startup
+
+					 gameoverTxt = new PIXI.Text(
+					   "GAME OVER!", 
+					   {font: "70px LCD Solid", fill: "white"}
+					 );
+					 gameoverTxt.position.set(120, stage.height / 2);
+					 gameOverScene.addChild(gameoverTxt);
+
+					 gameoverTxt2 = new PIXI.Text(
+					 	"Press SPACEBAR to continue defending earth",
+					 	{font:"20px LCD Solid", fill:"white"}
+					 );
+					 gameoverTxt2.position.set(70, (stage.height / 2) + 100);
+					 gameOverScene.addChild(gameoverTxt2);
+
+					 //titlescreen 
+					 //gameScene.visible = false; //hide game in title
+					 //title = false; //hide title identifier on startup
+					 titleScene = new Container();
+					 stage.addChild(titleScene);
+
+					 //Title screen
+					 titleTxt = new PIXI.Text(
+					 	"OUTTA SPACE",
+					 	{font: "80px LCD Solid", fill: "#ccccff"}
+					 );
+					 titleTxt.position.set(85, ((stage.height / 2) - 110));
+					 titleScene.addChild(titleTxt);
+					 
+					 titleTxt2 = new PIXI.Text(
+					 	"Press SPACEBAR to start",
+					 	{font: "29px LCD Solid", fill:"#99ff33"}
+					 );
+					 titleTxt2.position.set(145, (stage.height / 2) + 175);
+					 titleScene.addChild(titleTxt2);
+
+					 titleTxt3 = new PIXI.Text(
+					 	"Press LEFT / RIGHT arrow to change ship",
+					 	{font: "15px LCD Solid", fill:"#cc66ff"}
+					 );
+					 titleTxt3.position.set(170, (stage.height / 2) + 130);
+					 titleScene.addChild(titleTxt3);
+
+					 titleTxt4 = new PIXI.Text(
+					 	"by Jan Renz Medina",
+					 	{font: "15px LCD Solid", fill: "#ffff66"}
+					 );
+					 titleTxt4.position.set(255, (stage.height / 2) + 255);
+					 titleScene.addChild(titleTxt4);
+
+					 titleText5 = new PIXI.Text(
+					 	"Press X to quit",
+					 	{font: "16px LCD Solid", fill: "red"}
+					 );
+					 titleText5.position.set(260, (stage.height / 2) + 185);
+					 titleScene.addChild(titleText5);
+
+					 //Title Ship selection
+					 shipNo = 1; //init ship no
+					 titleShip = new Sprite(resources["images/spaceship1.png"].texture);
+					 titleShip.position.set(310, (stage.height / 2) + 20);
+					 titleScene.addChild(titleShip);
+
+					arrowLeft = new Sprite(resources["images/arrow-left.png"].texture);
+					arrowLeft.position.set(200, (stage.height / 2) + 35);
+					titleScene.addChild(arrowLeft);
+
+					arrowRight = new Sprite(resources["images/arrow-right.png"].texture);
+					arrowRight.position.set(450, (stage.height / 2) + 35);
+					titleScene.addChild(arrowRight);
+
+					gameScene.visible = false; //hide game in title
+
+					//Splash scene
+					//startup = true; //set startup identifier
+					titleScene.visible = false; //hide titlescreen on startup
+					splashScene = new Container();
+					stage.addChild(splashScene);
+
+					splashImg = new Sprite(resources["images/enemyship.png"].texture);
+					splashImg.position.set(300, (stage.height / 2) + 50);
+					splashScene.addChild(splashImg);
+
+					splashText = new PIXI.Text(
+						"HOLY MOTHERSHIP. Just look at those\n\naliens. Do you want those flying\n\n disks unload slimy creatures that\n\n would go and suck our brains or\n\n whatnot? No? Then get them\n\n           OUTTA SPACE!",
+						{font:"28px LCD Solid", fill:"white"}
+					);
+					splashText.position.set(60, (stage.height / 2) + 130);
+					splashScene.addChild(splashText);	
+
+					//State init
+					titleScene.visible = false; //hide
+					splashScene.visible = true; //show splash scene on startup
+					gameScene.visible = false; //hide
+
+					title = false;
+					startup = true; //set startup splash identifier
+
+					//set startup game state
+					state = play;
+	
+					//start game loop
+					update();
+				}
+
+				function update(){
+
+					if(endGame === false){
+						//move parallax bg
+						space.tilePosition.x -= (0.128 + wavesNo).clamp(0.1, 1.8);
+					}
+
+					//Loop function per 60 frames
+					requestAnimationFrame(update);
+
+					//Update game state [play, etc]
+					//checkState();
+					state();
+					//console.log("CURRENT STATE: " + state.toString());
+
+					//Render stage
+					renderer.render(stage); 
+				}
+
+				function checkState(){
+					/*if(startup === true){
+						state = gameStartup;
+					} 
+					else if(title === true){
+						state = gameTitle;
+					}
+					else {
+						//Gameplay
+						state = play;
+					}*/
+
+					state = play;
+				}
+
+				function play(){
+					if(endGame === true){ //game end
+						gameEnd();
+					} else{ //game still not end
+						//Game in progress
+						if(title === false && startup === false){
+							
+							//if game is not in titlescreen
+							//move player using its velocity
+							player.x += player.vx;
+							player.y += player.vy;
+
+							//Clamp player pos
+							/*if(player.x <= 5){ //x axis
+								player.x = 5;
+							}
+							if(player.x >= 630){
+								player.y = 630;
+							}
+
+							if(player.y <= 10){ //y axis
+								player.y = 10;
+							}
+							if(player.y >= 430){
+								player.y = 430;
+							}*/
+
+							contain(player, {x:5, y:10, width:650, height:500}); //clamp player pos
+
+							//player fire
+							if(firing){
+								pfire[0].x = player.x;
+								pfire[0].y = player.y;
+								pfire[0].vx = 0;
+								pfire[0].vy = 0;
+								pfire[0].visible = true;
+							}
+
+							//Fire collision check
+							if(pfire[0].visible === true){
+								pfire[0].x += 6;
+
+								/*var rand = Math.floor((Math.random() * 3) + 1);
+								if(rand === 1){
+									pfire[0].y += 0;
+									console.log("TEST1");
+								} 
+								if(rand === 2){
+									pfire[0].y += 1;
+									console.log("TEST2");
+								} 
+								if(rand === 3){
+									pfire[0].y -= 1;
+									console.log("TEST3");
+								}*/
+							}
+
+							if(efire[0].visible === true){
+								//move enemy fire forward
+								efire[0].x -= 5;
+								efire[0].y -= 0;
+
+								//clamp enemy fire
+								if(efire[0].x <= -15){
+									efire[0].visible = false;
+								}
+
+								//enemyfire hit player
+								if(detectCollision(player, efire[0])){ 
+									if(efire[0].visible === true){
+										livesNo--;
+										livesNo.clamp(0, 3);
+										livesTxt.text = "Lives: " + livesNo.toString();
+										efire[0].visible = false;
+									}	
+								}
+							}
+
+							var nextWave = true; //init next wave identifier
+
+							//check for collision 
+							for(var i = 0; i < enemy.length; i++){
+
+								//move enemy
+								if(enemy[i].visible === true){ //if enemy is visible
+									enemy[i].x -= 2 + wavesNo;
+
+									if(efire[0].visible === false){
+										efire[0].x = enemy[i].x;
+										efire[0].y = enemy[i].y;
+										efire[0].visible = true;
+									}
+
+									//Enemy pass
+									if(enemy[i].x < -40){
+										livesNo--;
+										livesNo.clamp(0, 3);
+										livesTxt.text = "Lives: " + livesNo.toString();
+										enemy[i].visible = false;
+									}
+
+									nextWave = false; //set next wave identifier
+								} else{ //enemy is invisible
+
+								}
+
+								//if there's collision
+								if(detectCollision(player, enemy[i])){
+									//if enemy is active
+									if(enemy[i].visible === true){
+										livesNo--;
+										livesNo.clamp(0, 3);
+										livesTxt.text = "Lives: " + livesNo.toString();
+										enemy[i].visible = false;
+										console.log("HIT!");
+										//perform explosion anim here
+										explode(enemy[i].x, enemy[i].y);
+									}
+								} 
+
+								//enemy hit by player fire
+								if(detectCollision(enemy[i], pfire[0])){
+									//if enemy is active
+									if(enemy[i].visible === true){
+										enemy[i].visible = false;
+										pfire[0].visible = false;
+										//perform explosion anim here
+										explode(enemy[i].x, enemy[i].y);
+									}
+								}
+
+								
+
+								else{
+									//no collision
+								}
+
+							}
+
+							//Next wave
+							if(nextWave === true){
+								wavesNo += 1;
+								wavesTxt.text = "Wave: " + wavesNo.toString();
+								nextWave = false; //reset next wave identifier
+								setupWave(); //setup new wave
+							}
+
+							//Dead player
+							if(livesNo <= 0){
+								livesNo = 0;
+								livesTxt.text = "Lives: " + livesNo.toString();
+								player.visible = false;
+								explode(player.x, player.y);
+								setTimeout(function(){
+									//perform player explosion anim here			
+									endGame = true; //end game
+								}, 1500);
+							}
+						} else{ 
+							if(title === true){ //titlescreen ops
+								gameTitle();
+							} 
+							else if(startup === true){ //startup ops
+								setTimeout(function(){gameStartup();}, 7000); //delay execute startup ops
+							}
+						}
+						
+					}
+				}
+
+				//Explosion anim
+				function explode(x, y){
+					var frames = [];
+
+					for(var i = 0; i < 33; i++){
+						frames.push(Texture.fromFrame("images/explosion" + (i + 1) + ".png"));
+					}
+
+					explosion = new PIXI.extras.MovieClip(frames);
+					explosion.position.set(x, y);
+					explosion.anchor.set(0.5);
+					explosion.animationSpeed = 0.5;
+					explosion.loop = false;
+
+					explosion.play();
+
+					gameScene.addChild(explosion);
+
+					//Hide explosion
+					setTimeout(function(){
+						explosion.visible = false;
+					}, 900);
+					//update();
+				}
+
+				//Titlescreen ops
+				function gameTitle(){
+
+				}
+
+				//Startup splash ops(delay)
+				function gameStartup(){
+					startup = false;
+					title = true;
+					splashScene.visible = false;
+					titleScene.visible = true;
+					shipNo = 1;
+						
+					console.log("START LOCK!");
+				}
+
+				function closeWindow() {
+				    stage.destroy();
+					renderer.destroy();
+					window.location = "http://www.pixijs.com/";
+				}
+
+				//Game over ops
+				function gameEnd(){
+					gameOverScene.visible = true;
+					document.body.style.backgroundColor = "black"; 
+					gameScene.visible = false; //hide game
+					bgScene.visible = false; //hide bg
+				}
+
+				//Setup waves
+				function setupWave(){
+					enemy = []; //reset array of enemies
+
+					//create new enemy wave
+					for(var i = 0; i < 10 * wavesNo; i++){
+						enemy[i] = new Sprite(resources["images/enemyship.png"].texture);
+						enemy[i].x = (800 + (400 * (i - wavesNo)));
+						enemy[i].y = (50 + ((Math.floor((Math.random() * 400) + 1)))).clamp(15, 400);
+						gameScene.addChild(enemy[i]);
+					}
+
+				}
+
+				function detectCollision(r1, r2){
+
+					  //Define the variables we'll need to calculate
+					  var hit, combinedHalfWidths, combinedHalfHeights, vx, vy;
+
+					  //hit will determine whether there's a collision
+					  hit = false;
+
+					  //Find the center points of each sprite
+					  r1.centerX = r1.x + r1.width / 2; 
+					  r1.centerY = r1.y + r1.height / 2; 
+					  r2.centerX = r2.x + r2.width / 2; 
+					  r2.centerY = r2.y + r2.height / 2; 
+
+					  //Find the half-widths and half-heights of each sprite
+					  r1.halfWidth = r1.width / 2;
+					  r1.halfHeight = r1.height / 2;
+					  r2.halfWidth = r2.width / 2;
+					  r2.halfHeight = r2.height / 2;
+
+					  //Calculate the distance vector between the sprites
+					  vx = r1.centerX - r2.centerX;
+					  vy = r1.centerY - r2.centerY;
+
+					  //Figure out the combined half-widths and half-heights
+					  combinedHalfWidths = r1.halfWidth + (r2.halfWidth / 2);
+					  combinedHalfHeights = r1.halfHeight + (r2.halfHeight / 2);
+
+					  //Check for a collision on the x axis
+					  if (Math.abs(vx) < combinedHalfWidths) {
+
+					    //A collision might be occuring. Check for a collision on the y axis
+					    if (Math.abs(vy) < combinedHalfHeights) {
+
+					      //There's definitely a collision happening
+					      hit = true;
+					    } else {
+
+					      //There's no collision on the y axis
+					      hit = false;
+					    }
+					  } else {
+
+					    //There's no collision on the x axis
+					    hit = false;
+					  }
+
+					  //`hit` will be either `true` or `false`
+					  return hit;
+				}
+
+				//Clamp sprite pos
+				function contain(sprite, container) {
+
+				  var collision = undefined;
+
+				  //Left
+				  if (sprite.x < container.x) {
+				    sprite.x = container.x;
+				    collision = "left";
+				  }
+
+				  //Top
+				  if (sprite.y < container.y) {
+				    sprite.y = container.y;
+				    collision = "top";
+				  }
+
+				  //Right
+				  if (sprite.x + sprite.width > container.width) {
+				    sprite.x = container.width - sprite.width;
+				    collision = "right";
+				  }
+
+				  //Bottom
+				  if (sprite.y + sprite.height > container.height) {
+				    sprite.y = container.height - sprite.height;
+				    collision = "bottom";
+				  }
+
+				  //Return the `collision` value
+				  return collision;
+				}
+
+
+				//The `keyboard` helper function
+				function keyboard(keyCode) {
+				  var key = {};
+				  key.code = keyCode;
+				  key.isDown = false;
+				  key.isUp = true;
+				  key.press = undefined;
+				  key.release = undefined;
+				  //The `downHandler`
+				  key.downHandler = function(event) {
+				    if (event.keyCode === key.code) {
+				      if (key.isUp && key.press) key.press();
+				      key.isDown = true;
+				      key.isUp = false;
+				    }
+				    event.preventDefault();
+				  };
+
+				  //The `upHandler`
+				  key.upHandler = function(event) {
+				    if (event.keyCode === key.code) {
+				      if (key.isDown && key.release) key.release();
+				      key.isDown = false;
+				      key.isUp = true;
+				    }
+				    event.preventDefault();
+				  };
+
+				  //Attach event listeners
+				  window.addEventListener(
+				    "keydown", key.downHandler.bind(key), false
+				  );
+				  window.addEventListener(
+				    "keyup", key.upHandler.bind(key), false
+				  );
+				  return key;
+				}
+
+				//Helper functions
+
+				/**
+				 * Returns a number whose value is limited to the given range.
+				 *
+				 * Example: limit the output of this computation to between 0 and 255
+				 * (x * 255).clamp(0, 255)
+				 *
+				 * @param {Number} min The lower boundary of the output range
+				 * @param {Number} max The upper boundary of the output range
+				 * @returns A number in the range [min, max]
+				 * @type Number
+				 */
+				Number.prototype.clamp = function(min, max) {
+				  return Math.min(Math.max(this, min), max);
+				};
+
+		</script>
+
+	</body>
+
+</html>
