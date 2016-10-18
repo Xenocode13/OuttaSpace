@@ -12,7 +12,6 @@
 		<script src="../pixi.js/bin/pixi.js"></script>
 
 		<script>
-
 			var Container = PIXI.Container,
 				autoDetectRenderer = PIXI.autoDetectRenderer;
 				loader = PIXI.loader,
@@ -33,14 +32,31 @@
 				document.getElementById("game-canvas").setAttribute('tabindex', 0);
 				document.getElementById("game-canvas").focus();
 
+				/*var Resource = PIXI.loaders.Resource;
+			    Resource.setExtensionLoadType("ogg", Resource.LOAD_TYPE.XHR);
+
+			    //Set default loading type for sound file extensions to be arraybuffer
+			    Resource.setExtensionXhrType("ogg", Resource.XHR_RESPONSE_TYPE.BUFFER);*/
+
 				loader
 					.add("images/spaceship1.png")
 					.add("images/spaceship2.png")
-					.add("images/enemyship.png")
 					.add("images/playerfire.png")
 					.add("images/enemyfire.png")
 					.add("images/arrow-left.png")
 					.add("images/arrow-right.png")
+					.add("images/enemyship1.png")
+					.add("images/enemyship2.png")
+					.add("images/enemyship3.png")
+					.add("images/enemyship4.png")
+					.add("images/enemyship5.png")
+					.add("images/enemyship6.png")
+					.add("images/enemyship7.png")
+					.add("images/enemyship8.png")
+					.add("images/enemyship9.png")
+					.add("images/enemyship10.png")
+					.add("images/enemyship11.png")
+					.add("images/enemyship12.png")
 					.add("images/explosion1.png")
 					.add("images/explosion2.png")
 					.add("images/explosion3.png")
@@ -78,9 +94,38 @@
 
 
 				//Define multiple vars
-				var player, enemy = [], pfire = [], efire = [], firing, livesTxt, wavesTxt, state, lives, livesNo, wavesNo, splashScene, startLock, startup, splashText, splashImg, gameScene, endGame, gameOverScene, gameoverTxt, gameoverTxt2, titleScene, title, titleTxt, titleTxt2, titleText3, titleText4, titleText5, titleShip, arrowLeft, arrowRight, shipNo, bgScene, explosion;
+				var player, enemy = [], pfire = [], efire = [], firing, livesTxt, wavesTxt, state, lives, livesNo, wavesNo, tutorialTxt1, tutorialTxt2, splashScene, startLock, startup, splashText, splashImg, gameScene, endGame, gameOverScene, gameoverTxt, gameoverTxt2, titleScene, title, titleText1, titleText2, titleText3, titleText4, titleText5, titleShip, arrowLeft, arrowRight, shipNo, bgScene, explosion, enemySpin = [];
+				var bgm = [], psfx = [], esfx = [], osfx = [], bgmp, sfx1p, sfx2p;
+				var bgmtype = { //music type(bgm)
+					Startup: 1,
+					Title: 2,
+					Game: 3,
+					Gameover: 4
+				};
+				var psfxtype = { //music type(player sfx)
+					Fire: 1,
+					Explode: 2,
+					Hit: 3
+				};
+				var esfxtype = { //music type(enemy sfx)
+					Fire: 21,
+					Explode: 22,
+					Pass: 23,
+					Hit: 24
+				};
+				var osfxtype = {
+					Click: 41,
+					Shift: 42
+				}
+
+				var maxWaveData; //save file for max waves
 
 				function setup(){
+
+					//setup savefile
+					maxWaveData = localStorage.getItem("maxWaveData") === null? 0:parseInt(JSON.parse(localStorage.maxWaveData)); //if there's savefile, get it
+					console.log("Savefile: " + maxWaveData.toString()); //test
+
 					//Bg container layer
 					bgScene = new Container();
 					stage.addChild(bgScene);
@@ -89,6 +134,30 @@
 					gameScene = new Container();
 					stage.addChild(gameScene);
 					//gameScene.visible = false; //hide game scene in startup
+
+					//Sounds ref
+					bgm[0] = new Audio("sounds/bgm1.ogg"); //epic game bgm
+					bgm[1] = new Audio("sounds/bgm2.ogg");
+					bgm[2] = new Audio("sounds/bgm3.ogg"); //titlescreen bgm
+					bgm[3] = new Audio("sounds/bgm4.ogg");
+					bgm[4] = new Audio("sounds/bgm5.ogg");
+					bgm[5] = new Audio("sounds/bgm6.ogg");
+
+					osfx[0] = new Audio("sounds/mothership.ogg"); //startup sfx
+					osfx[1] = new Audio("sounds/ufo.ogg"); //next wave sfx
+					osfx[2] = new Audio("sounds/shift.ogg"); //change ship sfx
+					osfx[3] = new Audio("sounds/select.ogg"); //select sfx
+
+					psfx[0] = new Audio("sounds/fire.ogg"); //player fire
+					psfx[1] = new Audio("sounds/explosion2.ogg"); //explode player
+					psfx[2] = new Audio("sounds/gameover.ogg"); 
+					psfx[3] = new Audio("sounds/hit.ogg"); //hit sfx
+
+					esfx[0] = new Audio("sounds/fire.ogg");
+					esfx[1] = new Audio("sounds/explosion1.ogg");
+					esfx[2] = new Audio("sounds/whoosh1.ogg");
+					esfx[3] = new Audio("sounds/hit.ogg");
+
 
 					//create bg
 					var spaceTexture = Texture.fromImage("images/space-texture.jpg");
@@ -99,18 +168,6 @@
 					space.tilePosition.y = 0;
 					bgScene.addChild(space);
 
-					wavesNo = 1; //set first wave
-
-					//Create enemy wave
-					if(wavesNo === 1){
-						for(var i = 0; i < 15; i++){
-							enemy[i] = new Sprite(resources["images/enemyship.png"].texture);
-							enemy[i].x = (800 + (400 * i));
-							enemy[i].y = (50 + ((Math.floor((Math.random() * 400) + 1)))).clamp(15, 400);
-							gameScene.addChild(enemy[i]);
-						}
-					}
-
 					//Create fires here
 					pfire[0] = new Sprite(resources["images/playerfire.png"].texture);
 					efire[0] = new Sprite(resources["images/enemyfire.png"].texture);
@@ -118,6 +175,26 @@
 					efire[0].visible = false;
 					gameScene.addChild(pfire[0]);
 					gameScene.addChild(efire[0]);
+
+					wavesNo = 1; //set first wave
+
+					//Create enemy wave
+					if(wavesNo === 1){
+						for(var i = 0; i < 15; i++){
+							//enemy[i] = new Sprite(resources["images/enemyship1.png"].texture);
+							//enemy[i].x = (800 + (400 * i));
+							//enemy[i].y = (50 + ((Math.floor((Math.random() * 400) + 1)))).clamp(15, 400);
+
+							//Generated enemy position
+							var eX = (800 + (400 * i)); //generated x val 
+							var eY = (50 + ((Math.floor((Math.random() * 400) + 1)))).clamp(15, 400); //generated y val 
+
+							//Enemy animation
+							spinEnemy(eX, eY, i);
+
+							//gameScene.addChild(enemy[i]);
+						}
+					}
 
 					//Create player
 					player = new Sprite(resources["images/spaceship1.png"].texture);
@@ -135,10 +212,11 @@
 						spacebar = keyboard(32),
 						xbtn = keyboard(88);
 
-						//renderer.plugins.interaction.autoPreventDefault = false
+					//renderer.plugins.interaction.autoPreventDefault = false
 
 					//Left arrow key press method
 					left.press = function(){
+						//console.log("LEFT!");
 						if(title === true){
 							//change ship
 							if(shipNo === 1){
@@ -151,8 +229,11 @@
 								titleShip.texture = Texture.fromImage("images/spaceship1.png");
 								shipNo = 1;
 							}
+
+							playMusic(sfx1p, osfxtype.Shift); //change ship sfx
+
 						} else{
-							if(startup === false){
+							if(startup === false && endGame === false){
 								//Change player's velocity
 								player.vx = (-5 - wavesNo).clamp(-7, -5);
 								player.vy = 0;
@@ -166,7 +247,7 @@
 						if(title === true){
 
 						} else{
-							if(startup === false){
+							if(startup === false && endGame === false){
 								//If arrow key is released 
 								//and player isn't moving vertically
 								//Stop player
@@ -180,17 +261,22 @@
 
 					//Up
 					up.press = function(){
-						player.vx = 0;
-						player.vy = (-5 - wavesNo).clamp(-7, -5);
+						if(title !== true && startup !== true && endGame !== true){
+							player.vx = 0;
+							player.vy = (-5 - wavesNo).clamp(-7, -5);
+						}
 					};
 					up.release = function(){
-						if(!down.isDown && player.vx === 0){
-							player.vy = 0;
+						if(title !== true && startup !== true && endGame !== true){
+							if(!down.isDown && player.vx === 0){
+								player.vy = 0;
+							}
 						}
 					};
 
 					//Right
 					right.press = function(){
+						//console.log("RIGHT!");
 						if(title === true){
 							//change ship
 							if(shipNo === 1){
@@ -203,33 +289,36 @@
 								titleShip.texture = Texture.fromImage("images/spaceship1.png");
 								shipNo = 1;
 							}
-						} else{
-							player.vx = (5 + wavesNo).clamp(5, 7);
-							player.vy = 0;
-						}
-						
-					};
-					right.release = function(){
-						if(title === true){
+
+							playMusic(sfx1p, osfxtype.Shift); //change ship sfx
 
 						} else{
-							if(startup === false){
-								if(!left.isDown && player.vy === 0){
-									player.vx = 0;
-								}
+							if(startup === false && endGame === false){
+								player.vx = (5 + wavesNo).clamp(5, 7);
+								player.vy = 0;
 							}
 						}
-						
+					};
+					right.release = function(){
+						if(title !== true && startup !== true && endGame !== true){
+							if(!left.isDown && player.vy === 0){
+								player.vx = 0;
+							}
+						}
 					};
 
 					//Down
 					down.press = function(){
-						player.vx = 0;
-						player.vy = (5 + wavesNo).clamp(5, 7);
+						if(title !== true && startup !== true && endGame !== true){
+							player.vx = 0;
+							player.vy = (5 + wavesNo).clamp(5, 7);
+						}
 					};
 					down.release = function(){
-						if(!up.isDown && player.vx === 0){
-							player.vy = 0;
+						if(title !== true && startup !== true && endGame !== true){
+							if(!up.isDown && player.vx === 0){
+								player.vy = 0;
+							}
 						}
 					};
 
@@ -248,8 +337,19 @@
 							titleScene.visible = false;
 							gameScene.visible = true;
 							title = false;
+
+							playMusic(sfx1p, osfxtype.Click); //select sfx
+							playMusic(bgmp, bgmtype.Game); //play game bgm
+
+							setTimeout(function(){ //delay hide tutorial text
+								gameScene.removeChild(tutorialTxt1);
+								gameScene.removeChild(tutorialTxt2);
+							}, 5000);
+
 						} else{
 							if(startup === false){
+								//psfx[0].play(); //player fire sfx
+								playMusic(sfx1p, psfxtype.Fire); //player fire sfx
 								firing = true;
 							}
 							if(endGame === true){
@@ -259,13 +359,8 @@
 					};
 
 					spacebar.release = function(){
-						if(title === true){
-							
-						}
-						else{
-							if(startup === false){
-								firing = false;
-							}
+						if(title !== true && startup !== true && endGame !== true){
+							firing = false;
 						}
 					};
 
@@ -288,17 +383,35 @@
 					livesNo = 3; //set max lives 
 					livesTxt = new PIXI.Text( 
 						"Lives: " + livesNo.toString(), 
-						{font: "18px LCD solid", fill:"white"} 
+						//{font: "18px LCD solid", fill:"white"} 
+						{fontFamily: "LCD Solid, Courier New", fontSize: "18px", fill: "white"}
 					);
 					livesTxt.position.set(10, 10); 
 					gameScene.addChild(livesTxt); 
 
 					wavesTxt = new PIXI.Text(
 						"Wave: " + wavesNo.toString(),
-						{font: "18px LCD solid", fill:"white"}
+						//{font: "18px LCD solid", fill:"white"}
+						{fontFamily: "LCD Solid, Courier New", fontSize: "18px", fill: "white"}
 					);
 					wavesTxt.position.set(10, 40);
 					gameScene.addChild(wavesTxt);
+
+					//in-game tutorial text
+					tutorialTxt1 = new PIXI.Text(
+						"Press ARROW KEYS to navigate",
+						{fontFamily: "LCD Solid, Courier New", fontSize: "25px", fill: "#14e06c"}
+					);
+					tutorialTxt1.position.set(120, 80);
+					gameScene.addChild(tutorialTxt1);
+
+					tutorialTxt2 = new PIXI.Text(
+						"Press SPACEBAR to shoot",
+						{fontFamily: "LCD Solid, Courier New", fontSize: "25px", fill: "#e0187f"}
+					);
+					tutorialTxt2.position.set(155, 120);
+					gameScene.addChild(tutorialTxt2);
+
 
 					//init game over screen
 					endGame = false; //reset end game identifier
@@ -308,16 +421,18 @@
 
 					 gameoverTxt = new PIXI.Text(
 					   "GAME OVER!", 
-					   {font: "70px LCD Solid", fill: "white"}
+					   //{font: "70px LCD Solid", fill: "white"}
+					   {fontFamily: "LCD Solid, Courier New", fontSize: "70px", fill: "white"}
 					 );
-					 gameoverTxt.position.set(120, stage.height / 2);
+					 gameoverTxt.position.set(145, stage.height / 2);
 					 gameOverScene.addChild(gameoverTxt);
 
 					 gameoverTxt2 = new PIXI.Text(
 					 	"Press SPACEBAR to continue defending earth",
-					 	{font:"20px LCD Solid", fill:"white"}
+					 	//{font:"20px LCD Solid", fill:"white"}
+					 	{fontFamily: "LCD Solid, Courier New", fontSize: "20px", fill: "white"}
 					 );
-					 gameoverTxt2.position.set(70, (stage.height / 2) + 100);
+					 gameoverTxt2.position.set(95, (stage.height / 2) + 100);
 					 gameOverScene.addChild(gameoverTxt2);
 
 					 //titlescreen 
@@ -327,37 +442,42 @@
 					 stage.addChild(titleScene);
 
 					 //Title screen
-					 titleTxt = new PIXI.Text(
+					 titleText1 = new PIXI.Text(
 					 	"OUTTA SPACE",
-					 	{font: "80px LCD Solid", fill: "#ccccff"}
+					 	//{font: "80px LCD Solid, Courier New", fill: "#ccccff"}
+					 	{fontFamily: "LCD Solid, Courier New", fontSize: "80px", fill: "#ccccff"}
 					 );
-					 titleTxt.position.set(85, ((stage.height / 2) - 110));
-					 titleScene.addChild(titleTxt);
+					 titleText1.position.set(85, ((stage.height / 2) - 110));
+					 titleScene.addChild(titleText1);
 					 
-					 titleTxt2 = new PIXI.Text(
+					 titleText2 = new PIXI.Text(
 					 	"Press SPACEBAR to start",
-					 	{font: "29px LCD Solid", fill:"#99ff33"}
+					 	//{font: "29px LCD Solid", fill:"#99ff33"}
+					 	{fontFamily: "LCD Solid, Courier New", fontSize: "29px", fill:"#99ff33"}
 					 );
-					 titleTxt2.position.set(145, (stage.height / 2) + 175);
-					 titleScene.addChild(titleTxt2);
+					 titleText2.position.set(145, (stage.height / 2) + 175);
+					 titleScene.addChild(titleText2);
 
-					 titleTxt3 = new PIXI.Text(
+					 titleText3 = new PIXI.Text(
 					 	"Press LEFT / RIGHT arrow to change ship",
-					 	{font: "15px LCD Solid", fill:"#cc66ff"}
+					 	//{font: "15px LCD Solid", fill:"#cc66ff"}
+					 	{fontFamily: "LCD Solid, Courier New", fontSize: "15px", fill: "#cc66ff"}
 					 );
-					 titleTxt3.position.set(170, (stage.height / 2) + 130);
-					 titleScene.addChild(titleTxt3);
+					 titleText3.position.set(170, (stage.height / 2) + 130);
+					 titleScene.addChild(titleText3);
 
-					 titleTxt4 = new PIXI.Text(
+					 titleText4 = new PIXI.Text(
 					 	"by Jan Renz Medina",
-					 	{font: "15px LCD Solid", fill: "#ffff66"}
+					 	//{font: "15px LCD Solid", fill: "#ffff66"}
+					 	{fontFamily: "LCD Solid, Courier New", fontSize: "15px", fill: "#ffff66"}
 					 );
-					 titleTxt4.position.set(255, (stage.height / 2) + 255);
-					 titleScene.addChild(titleTxt4);
+					 titleText4.position.set(255, (stage.height / 2) + 255);
+					 titleScene.addChild(titleText4);
 
 					 titleText5 = new PIXI.Text(
 					 	"Press X to quit",
-					 	{font: "16px LCD Solid", fill: "red"}
+					 	//{font: "16px LCD Solid", fill: "red"}
+					 	{fontFamily: "LCD Solid, Courier New", fontSize: "16px", fill: "red"}
 					 );
 					 titleText5.position.set(260, (stage.height / 2) + 185);
 					 titleScene.addChild(titleText5);
@@ -384,13 +504,15 @@
 					splashScene = new Container();
 					stage.addChild(splashScene);
 
-					splashImg = new Sprite(resources["images/enemyship.png"].texture);
-					splashImg.position.set(300, (stage.height / 2) + 50);
-					splashScene.addChild(splashImg);
+					//splashImg = new Sprite(resources["images/enemyship1.png"].texture);
+					//splashImg.position.set(300, (stage.height / 2) + 50);
+					//splashScene.addChild(splashImg);
+					spinStartup(300, (stage.height / 2) + 50); //animated ufo in startup
 
 					splashText = new PIXI.Text(
 						"HOLY MOTHERSHIP. Just look at those\n\naliens. Do you want those flying\n\n disks unload slimy creatures that\n\n would go and suck our brains or\n\n whatnot? No? Then get them\n\n           OUTTA SPACE!",
-						{font:"28px LCD Solid", fill:"white"}
+						//{font:"28px LCD Solid", fill:"white"}
+						{fontFamily: "LCD Solid, Courier New", fontSize: "28px", fill: "white"}
 					);
 					splashText.position.set(60, (stage.height / 2) + 130);
 					splashScene.addChild(splashText);	
@@ -402,6 +524,8 @@
 
 					title = false;
 					startup = true; //set startup splash identifier
+
+					playMusic(bgmp, bgmtype.Startup); //play startup bgm
 
 					//set startup game state
 					state = play;
@@ -511,13 +635,16 @@
 									efire[0].visible = false;
 								}
 
-								//enemyfire hit player
+								//eplayer hit by enemyfire
 								if(detectCollision(player, efire[0])){ 
 									if(efire[0].visible === true){
 										livesNo--;
 										livesNo.clamp(0, 3);
 										livesTxt.text = "Lives: " + livesNo.toString();
-										efire[0].visible = false;
+
+										playMusic(sfx1p, psfxtype.Hit);
+
+										efire[0].visible = false; //hide enemy bullet after hit
 									}	
 								}
 							}
@@ -525,24 +652,28 @@
 							var nextWave = true; //init next wave identifier
 
 							//check for collision 
-							for(var i = 0; i < enemy.length; i++){
+							for(var i = 0; i < enemySpin.length; i++){
 
 								//move enemy
-								if(enemy[i].visible === true){ //if enemy is visible
-									enemy[i].x -= 2 + wavesNo;
+								if(enemySpin[i].visible === true){ //if enemy is visible
+									enemySpin[i].x -= 2 + wavesNo;
 
 									if(efire[0].visible === false){
-										efire[0].x = enemy[i].x;
-										efire[0].y = enemy[i].y;
+										efire[0].x = enemySpin[i].x;
+										efire[0].y = enemySpin[i].y;
 										efire[0].visible = true;
+
+										playMusic(sfx2p, esfxtype.Fire); //enemy fire sfx
 									}
 
 									//Enemy pass
-									if(enemy[i].x < -40){
+									if(enemySpin[i].x < -40){
 										livesNo--;
 										livesNo.clamp(0, 3);
 										livesTxt.text = "Lives: " + livesNo.toString();
-										enemy[i].visible = false;
+										enemySpin[i].visible = false;
+
+										playMusic(sfx2p, esfxtype.Pass); //enemy pass sfx
 									}
 
 									nextWave = false; //set next wave identifier
@@ -551,31 +682,37 @@
 								}
 
 								//if there's collision
-								if(detectCollision(player, enemy[i])){
+								if(detectCollision(player, enemySpin[i])){ 
 									//if enemy is active
-									if(enemy[i].visible === true){
+									if(enemySpin[i].visible === true){
 										livesNo--;
 										livesNo.clamp(0, 3);
 										livesTxt.text = "Lives: " + livesNo.toString();
-										enemy[i].visible = false;
+										psfx[3].play(); //player hit sfx
+
+										enemySpin[i].visible = false;
 										console.log("HIT!");
 										//perform explosion anim here
-										explode(enemy[i].x, enemy[i].y);
+										explode(enemySpin[i].x, enemySpin[i].y);
+
+										playMusic(sfx2p, esfxtype.Hit); //enemy hit sfx
+										playMusic(sfx2p, esfxtype.Explode); //enemy explode sfx
 									}
 								} 
 
 								//enemy hit by player fire
-								if(detectCollision(enemy[i], pfire[0])){
+								if(detectCollision(enemySpin[i], pfire[0])){
 									//if enemy is active
-									if(enemy[i].visible === true){
-										enemy[i].visible = false;
+									if(enemySpin[i].visible === true){
+										enemySpin[i].visible = false;
 										pfire[0].visible = false;
 										//perform explosion anim here
-										explode(enemy[i].x, enemy[i].y);
+										explode(enemySpin[i].x, enemySpin[i].y);
+
+										playMusic(sfx2p, esfxtype.Hit); //enemy hit sfx
+										playMusic(sfx2p, esfxtype.Explode); //enemy explode sfx
 									}
 								}
-
-								
 
 								else{
 									//no collision
@@ -597,10 +734,17 @@
 								livesTxt.text = "Lives: " + livesNo.toString();
 								player.visible = false;
 								explode(player.x, player.y);
-								setTimeout(function(){
-									//perform player explosion anim here			
-									endGame = true; //end game
-								}, 1500);
+								endGame = true;
+
+								playMusic(sfx1p, psfxtype.Explode); //play player explode sfx
+								playMusic(bgmp, bgmtype.Gameover); //play gameover bgm
+
+								//savefile
+								if(wavesNo > maxWaveData){ //if there's a new highscore
+									maxWaveData = wavesNo; //set savedata
+									localStorage.maxWaveData = JSON.stringify(maxWaveData); //save data
+									console.log("Saved data: " + JSON.parse(localStorage.maxWaveData)); //test
+								}
 							}
 						} else{ 
 							if(title === true){ //titlescreen ops
@@ -632,27 +776,144 @@
 
 					gameScene.addChild(explosion);
 
-					//Hide explosion
+					//Hide explosion after less than 1 sec
 					setTimeout(function(){
 						explosion.visible = false;
 					}, 900);
-					//update();
+				}
+
+				//Enemy spin anim
+				function spinEnemy(x, y, id){
+					var frames = [];
+
+					for(var i = 0; i < 12; i++){
+						frames.push(Texture.fromFrame("images/enemyship" + (i + 1) + ".png"));
+					}
+
+					enemySpin[id] = new PIXI.extras.MovieClip(frames);
+					enemySpin[id].position.set(x, y);
+					//enemySpin[id].anchor.set(0.5);
+					enemySpin[id].animationSpeed = 0.5;
+					enemySpin[id].loop = true;
+
+					enemySpin[id].play();
+
+					gameScene.addChild(enemySpin[id]);
+				}
+
+				//enemy spin anim in startup splash
+				function spinStartup(x, y){
+					var frames = [];
+
+					for(var i = 0; i < 12; i++){
+						frames.push(Texture.fromFrame("images/enemyship" + (i + 1) + ".png"));
+					}
+
+					splashImg = new PIXI.extras.MovieClip(frames);
+					splashImg.position.set(x, y);
+					//splashImg.anchor.set(0.5);
+					splashImg.animationSpeed = 0.5;
+					splashImg.loop = true;
+
+					splashImg.play();
+
+					splashScene.addChild(splashImg);
 				}
 
 				//Titlescreen ops
 				function gameTitle(){
+					if(title === true){
 
+					}
 				}
 
 				//Startup splash ops(delay)
 				function gameStartup(){
-					startup = false;
-					title = true;
-					splashScene.visible = false;
-					titleScene.visible = true;
-					shipNo = 1;
-						
-					console.log("START LOCK!");
+					if(startup === true){
+						startup = false;
+						title = true;
+						splashScene.visible = false;
+						titleScene.visible = true;
+						shipNo = 1;
+								
+						playMusic(bgmp, bgmtype.Title); //play title bgm
+
+						console.log("Start Titlescreen!");
+					}
+				}
+
+				function playMusic(musicPlayer, audioType){ //play music
+					var bg = musicPlayer === bgmp? true:false;
+					var sfxp = musicPlayer === sfx1p || musicPlayer === sfx2p? true:false;
+
+					if(bg === true){ //bgm
+						if(audioType === bgmtype.Startup){
+							sfx1p = osfx[0]; //startup sfx play
+							sfx1p.play();
+						}
+						else if(audioType === bgmtype.Title){
+							sfx1p.pause(); //stop startup bgm
+							bgmp = bgm[2];
+							bgmp.addEventListener('ended', function() {
+							    this.currentTime = 0;
+							    this.play();
+							}, false);
+							bgmp.play(); //title screen bgm
+						}
+						else if(audioType === bgmtype.Game){
+							bgmp = bgm[0]; //start game bgm
+							bgmp.addEventListener('ended', function() {
+							    this.currentTime = 0;
+							    this.play();
+							}, false);
+							bgmp.play();
+						} 
+						else if(audioType === bgmtype.Gameover){
+							setTimeout(function(){
+								bgmp.pause(); //stop game bgm
+								sfx1p = psfx[2]; //gameover sfx
+								sfx1p.play(); 
+							}, 400);
+						}
+					}
+					else if(sfxp === true){ //sound fx
+						if(audioType === psfxtype.Fire){ //player fire sfx
+							sfx1p = psfx[0];
+							sfx1p.play(); 
+						}
+						else if(audioType === psfxtype.Explode){ //player explode sfx
+							sfx1p = psfx[1]; 
+							sfx1p.play();
+						}
+						else if(audioType === psfxtype.Hit){ //player hit sfx
+							sfx1p = psfx[3]; 
+							sfx1p.play();
+						} 
+						else if(audioType === esfxtype.Fire){ //enemy fire sfx
+							sfx2p = esfx[0]; 
+							sfx2p.play();
+						}
+						else if(audioType === esfxtype.Explode){ //enemy explode sfx
+							setTimeout(function(){ //explosion sfx delay 
+								sfx2p = esfx[1]; 
+								sfx2p.play();
+							}, 400);
+						}
+						else if(audioType === esfxtype.Pass){ //enemy pass sfx
+							sfx2p = esfx[2]; 
+							sfx2p.play();
+						}
+						else if(audioType === esfxtype.Hit){ //enemy hit sfx
+							sfx2p = esfx[3];
+							sfx2p.play();
+						} else if(audioType === osfxtype.Click){ //select sfx
+							sfx1p == osfx[3]; 
+							sfx1p.play();
+						} else if(audioType === osfxtype.Shift){ //change ship sfx
+							sfx1p = osfx[2]; 
+							sfx1p.play();
+						}
+					}
 				}
 
 				function closeWindow() {
@@ -663,24 +924,55 @@
 
 				//Game over ops
 				function gameEnd(){
-					gameOverScene.visible = true;
-					document.body.style.backgroundColor = "black"; 
-					gameScene.visible = false; //hide game
-					bgScene.visible = false; //hide bg
+					setTimeout(function(){
+						gameOverScene.visible = true;
+						document.body.style.backgroundColor = "black"; 
+						gameScene.visible = false; //hide game
+						splashScene.destroy;
+						bgScene.visible = false; //hide bg
+						performCleanup(); //cleanup unused objects
+					}, 1500);
+				}
+
+				function performCleanup(){
+					//splash
+					splashScene.removeChild(splashText);
+					splashScene.removeChild(splashImg);
+
+					//titlescreen
+					titleScene.removeChild(titleText1);
+					titleScene.removeChild(titleText2);
+					titleScene.removeChild(titleText3);
+					titleScene.removeChild(titleText4);
+					titleScene.removeChild(titleText5);
+					titleScene.removeChild(titleShip);
+
+					//Detach stage children
+					stage.removeChild(splashScene);
+					stage.removeChild(titleScene);
+					stage.removeChild(gameScene);
 				}
 
 				//Setup waves
 				function setupWave(){
-					enemy = []; //reset array of enemies
+					enemySpin = []; //reset array of enemies
 
 					//create new enemy wave
 					for(var i = 0; i < 10 * wavesNo; i++){
-						enemy[i] = new Sprite(resources["images/enemyship.png"].texture);
-						enemy[i].x = (800 + (400 * (i - wavesNo)));
-						enemy[i].y = (50 + ((Math.floor((Math.random() * 400) + 1)))).clamp(15, 400);
-						gameScene.addChild(enemy[i]);
+						//enemySpin[i] = new Sprite(resources["images/enemyship1.png"].texture);
+						//enemy[i].x = (800 + (400 * (i - wavesNo)));
+						//enemy[i].y = (50 + ((Math.floor((Math.random() * 400) + 1)))).clamp(15, 400);
+						//gameScene.addChild(enemy[i]);
+
+						//Generated enemy position
+						var eX = (800 + (400 * i)); //generated x val 
+						var eY = (50 + ((Math.floor((Math.random() * 400) + 1)))).clamp(15, 400); //generated y val 
+
+						//Enemy animation
+						spinEnemy(eX, eY, i);
 					}
 
+					osfx[1].play(); //play next wave sfx
 				}
 
 				function detectCollision(r1, r2){
@@ -705,7 +997,7 @@
 
 					  //Calculate the distance vector between the sprites
 					  vx = r1.centerX - r2.centerX;
-					  vy = r1.centerY - r2.centerY;
+					  vy = (r1.centerY) - (r2.centerY);
 
 					  //Figure out the combined half-widths and half-heights
 					  combinedHalfWidths = r1.halfWidth + (r2.halfWidth / 2);
