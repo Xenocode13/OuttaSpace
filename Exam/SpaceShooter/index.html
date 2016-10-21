@@ -41,6 +41,12 @@
 				loader
 					.add("images/spaceship1.png")
 					.add("images/spaceship2.png")
+					.add("images/p1ship1.png")
+					.add("images/p1ship2.png")
+					.add("images/p1ship3.png")
+					.add("images/p2ship1.png")
+					.add("images/p2ship2.png")
+					.add("images/p2ship3.png")
 					.add("images/playerfire.png")
 					.add("images/enemyfire.png")
 					.add("images/arrow-left.png")
@@ -90,11 +96,12 @@
 					.add("images/explosion31.png")
 					.add("images/explosion32.png")
 					.add("images/explosion33.png")
+					.add("images/explosion34.png")
 					.load(setup);
 
 
 				//Define multiple vars
-				var player, enemy = [], pfire = [], efire = [], firing, livesTxt, wavesTxt, state, lives, livesNo, wavesNo, tutorialTxt1, tutorialTxt2, splashScene, startLock, startup, splashText, splashImg, gameScene, endGame, gameOverScene, gameoverTxt, gameoverTxt2, titleScene, title, titleText1, titleText2, titleText3, titleText4, titleText5, titleShip, arrowLeft, arrowRight, shipNo, bgScene, explosion, enemySpin = [];
+				var player, playervx, playervy, enemy = [], pfire = [], efire = [], firing, livesTxt, wavesTxt, state, lives, livesNo, wavesNo, tutorialTxt1, tutorialTxt2, splashScene, startLock, startup, splashText, splashImg, gameScene, endGame, gameOverScene, gameoverTxt, gameoverTxt2, titleScene, title, titleText1, titleText2, titleText3, titleText4, titleText5, titleShip, titleShipInit, arrowLeft, arrowRight, shipNo, bgScene, explosion, enemySpin = [];
 				var bgm = [], psfx = [], esfx = [], osfx = [], bgmp, sfx1p, sfx2p;
 				var bgmtype = { //music type(bgm)
 					Startup: 1,
@@ -173,8 +180,22 @@
 					efire[0] = new Sprite(resources["images/enemyfire.png"].texture);
 					pfire[0].visible = false;
 					efire[0].visible = false;
+
+					//test
+					pfire[1] = new Sprite(resources["images/playerfire.png"].texture);
+					pfire[1].visible = false;
+					pfire[2] = new Sprite(resources["images/playerfire.png"].texture);
+					pfire[2].visible = false;
+					pfire[3] = new Sprite(resources["images/playerfire.png"].texture);
+					pfire[3].visible = false;
+
 					gameScene.addChild(pfire[0]);
+					gameScene.addChild(pfire[1]);
+					gameScene.addChild(pfire[2]);
+					gameScene.addChild(pfire[3]);
 					gameScene.addChild(efire[0]);
+
+
 
 					wavesNo = 1; //set first wave
 
@@ -197,12 +218,20 @@
 					}
 
 					//Create player
-					player = new Sprite(resources["images/spaceship1.png"].texture);
+					/*player = new Sprite(resources["images/spaceship1.png"].texture);
 					player.x = 10;
 					player.y = 350;
 					player.vx = 0;
 					player.vy = 0;
-					gameScene.addChild(player);
+					gameScene.addChild(player);*/
+					//shipNo = 1; //test
+					//playerAnimate(10, 350); //test
+					//player.vx = 0;
+					//player.vy = 0;
+
+					//init player movement speed
+					playervx = 0;
+					playervy = 0;
 
 					//Get keyboard arrow keys
 					var left = keyboard(37),
@@ -221,13 +250,15 @@
 							//change ship
 							if(shipNo === 1){
 								//titleShip.setTexture(resources["images/spaceship2.png"].texture);
-								titleShip.texture = Texture.fromImage("images/spaceship2.png");
+								//titleShip.texture = Texture.fromImage("images/spaceship2.png");
 								shipNo = 2;
+								changeTitleShip(); //test
 							}
 							else if(shipNo === 2){
 								//titleShip.setTexture(resources["images/spaceship1.png"].texture);
-								titleShip.texture = Texture.fromImage("images/spaceship1.png");
+								//titleShip.texture = Texture.fromImage("images/spaceship1.png");
 								shipNo = 1;
+								changeTitleShip(); //test
 							}
 
 							playMusic(sfx1p, osfxtype.Shift); //change ship sfx
@@ -235,8 +266,8 @@
 						} else{
 							if(startup === false && endGame === false){
 								//Change player's velocity
-								player.vx = (-5 - wavesNo).clamp(-7, -5);
-								player.vy = 0;
+								playervx = (-5 - wavesNo).clamp(-7, -5);
+								playervy = 0;
 							}
 							
 						}
@@ -251,8 +282,8 @@
 								//If arrow key is released 
 								//and player isn't moving vertically
 								//Stop player
-								if(!right.isDown && player.vy === 0){
-									player.vx = 0;
+								if(!right.isDown && playervy === 0){
+									playervx = 0;
 								}
 							}
 							
@@ -262,14 +293,14 @@
 					//Up
 					up.press = function(){
 						if(title !== true && startup !== true && endGame !== true){
-							player.vx = 0;
-							player.vy = (-5 - wavesNo).clamp(-7, -5);
+							playervx = 0;
+							playervy = (-5 - wavesNo).clamp(-7, -5);
 						}
 					};
 					up.release = function(){
 						if(title !== true && startup !== true && endGame !== true){
-							if(!down.isDown && player.vx === 0){
-								player.vy = 0;
+							if(!down.isDown && playervx === 0){
+								playervy = 0;
 							}
 						}
 					};
@@ -281,28 +312,30 @@
 							//change ship
 							if(shipNo === 1){
 								//titleShip.setTexture(resources["images/spaceship2.png"].texture);
-								titleShip.texture = Texture.fromImage("images/spaceship2.png");
+								//titleShip.texture = Texture.fromImage("images/spaceship2.png");
 								shipNo = 2;
+								changeTitleShip(); //test
 							}
 							else if(shipNo === 2){
 								//titleShip.setTexture(resources["images/spaceship1.png"].texture);
-								titleShip.texture = Texture.fromImage("images/spaceship1.png");
+								//titleShip.texture = Texture.fromImage("images/spaceship1.png");
 								shipNo = 1;
+								changeTitleShip(); //test
 							}
 
 							playMusic(sfx1p, osfxtype.Shift); //change ship sfx
 
 						} else{
 							if(startup === false && endGame === false){
-								player.vx = (5 + wavesNo).clamp(5, 7);
-								player.vy = 0;
+								playervx = (5 + wavesNo).clamp(5, 7);
+								playervy = 0;
 							}
 						}
 					};
 					right.release = function(){
 						if(title !== true && startup !== true && endGame !== true){
-							if(!left.isDown && player.vy === 0){
-								player.vx = 0;
+							if(!left.isDown && playervy === 0){
+								playervx = 0;
 							}
 						}
 					};
@@ -310,14 +343,14 @@
 					//Down
 					down.press = function(){
 						if(title !== true && startup !== true && endGame !== true){
-							player.vx = 0;
-							player.vy = (5 + wavesNo).clamp(5, 7);
+							playervx = 0;
+							playervy = (5 + wavesNo).clamp(5, 7);
 						}
 					};
 					down.release = function(){
 						if(title !== true && startup !== true && endGame !== true){
-							if(!up.isDown && player.vx === 0){
-								player.vy = 0;
+							if(!up.isDown && playervx === 0){
+								playervy = 0;
 							}
 						}
 					};
@@ -327,11 +360,13 @@
 						if(title === true){
 							if(shipNo === 1){
 								//player.setTexture(resources["images/spaceship1.png"].texture);
-								player.texture = Texture.fromImage("images/spaceship1.png");
+								//player.texture = Texture.fromImage("images/spaceship1.png");
+								playerAnimate(10, 350); //test
 							} 
 							else if(shipNo === 2){
 								//player.setTexture(resources["images/spaceship2.png"].texture);
-								player.texture = Texture.fromImage("images/spaceship2.png");
+								//player.texture = Texture.fromImage("images/spaceship2.png");
+								playerAnimate(10, 350); //test
 							}
 
 							titleScene.visible = false;
@@ -384,7 +419,7 @@
 					livesTxt = new PIXI.Text( 
 						"Lives: " + livesNo.toString(), 
 						//{font: "18px LCD solid", fill:"white"} 
-						{fontFamily: "LCD Solid, Courier New", fontSize: "18px", fill: "white"}
+						{fontFamily: "lcd_solidregular, Courier New", fontSize: "18px", fill: "white"}
 					);
 					livesTxt.position.set(10, 10); 
 					gameScene.addChild(livesTxt); 
@@ -392,7 +427,7 @@
 					wavesTxt = new PIXI.Text(
 						"Wave: " + wavesNo.toString(),
 						//{font: "18px LCD solid", fill:"white"}
-						{fontFamily: "LCD Solid, Courier New", fontSize: "18px", fill: "white"}
+						{fontFamily: "lcd_solidregular, Courier New", fontSize: "18px", fill: "white"}
 					);
 					wavesTxt.position.set(10, 40);
 					gameScene.addChild(wavesTxt);
@@ -400,14 +435,14 @@
 					//in-game tutorial text
 					tutorialTxt1 = new PIXI.Text(
 						"Press ARROW KEYS to navigate",
-						{fontFamily: "LCD Solid, Courier New", fontSize: "25px", fill: "#14e06c"}
+						{fontFamily: "lcd_solidregular, Courier New", fontSize: "25px", fill: "#14e06c"}
 					);
 					tutorialTxt1.position.set(120, 80);
 					gameScene.addChild(tutorialTxt1);
 
 					tutorialTxt2 = new PIXI.Text(
 						"Press SPACEBAR to shoot",
-						{fontFamily: "LCD Solid, Courier New", fontSize: "25px", fill: "#e0187f"}
+						{fontFamily: "lcd_solidregular, Courier New", fontSize: "25px", fill: "#e0187f"}
 					);
 					tutorialTxt2.position.set(155, 120);
 					gameScene.addChild(tutorialTxt2);
@@ -422,7 +457,7 @@
 					 gameoverTxt = new PIXI.Text(
 					   "GAME OVER!", 
 					   //{font: "70px LCD Solid", fill: "white"}
-					   {fontFamily: "LCD Solid, Courier New", fontSize: "70px", fill: "white"}
+					   {fontFamily: "lcd_solidregular, Courier New", fontSize: "70px", fill: "white"}
 					 );
 					 gameoverTxt.position.set(145, stage.height / 2);
 					 gameOverScene.addChild(gameoverTxt);
@@ -430,7 +465,7 @@
 					 gameoverTxt2 = new PIXI.Text(
 					 	"Press SPACEBAR to continue defending earth",
 					 	//{font:"20px LCD Solid", fill:"white"}
-					 	{fontFamily: "LCD Solid, Courier New", fontSize: "20px", fill: "white"}
+					 	{fontFamily: "lcd_solidregular, Courier New", fontSize: "20px", fill: "white"}
 					 );
 					 gameoverTxt2.position.set(95, (stage.height / 2) + 100);
 					 gameOverScene.addChild(gameoverTxt2);
@@ -445,7 +480,7 @@
 					 titleText1 = new PIXI.Text(
 					 	"OUTTA SPACE",
 					 	//{font: "80px LCD Solid, Courier New", fill: "#ccccff"}
-					 	{fontFamily: "LCD Solid, Courier New", fontSize: "80px", fill: "#ccccff"}
+					 	{fontFamily: "lcd_solidregular, Courier New", fontSize: "80px", fill: "#ccccff"}
 					 );
 					 titleText1.position.set(85, ((stage.height / 2) - 110));
 					 titleScene.addChild(titleText1);
@@ -453,7 +488,7 @@
 					 titleText2 = new PIXI.Text(
 					 	"Press SPACEBAR to start",
 					 	//{font: "29px LCD Solid", fill:"#99ff33"}
-					 	{fontFamily: "LCD Solid, Courier New", fontSize: "29px", fill:"#99ff33"}
+					 	{fontFamily: "lcd_solidregular, Courier New", fontSize: "29px", fill:"#99ff33"}
 					 );
 					 titleText2.position.set(145, (stage.height / 2) + 175);
 					 titleScene.addChild(titleText2);
@@ -461,7 +496,7 @@
 					 titleText3 = new PIXI.Text(
 					 	"Press LEFT / RIGHT arrow to change ship",
 					 	//{font: "15px LCD Solid", fill:"#cc66ff"}
-					 	{fontFamily: "LCD Solid, Courier New", fontSize: "15px", fill: "#cc66ff"}
+					 	{fontFamily: "lcd_solidregular, Courier New", fontSize: "15px", fill: "#cc66ff"}
 					 );
 					 titleText3.position.set(170, (stage.height / 2) + 130);
 					 titleScene.addChild(titleText3);
@@ -469,7 +504,7 @@
 					 titleText4 = new PIXI.Text(
 					 	"by Jan Renz Medina",
 					 	//{font: "15px LCD Solid", fill: "#ffff66"}
-					 	{fontFamily: "LCD Solid, Courier New", fontSize: "15px", fill: "#ffff66"}
+					 	{fontFamily: "lcd_solidregular, Courier New", fontSize: "15px", fill: "#ffff66"}
 					 );
 					 titleText4.position.set(255, (stage.height / 2) + 255);
 					 titleScene.addChild(titleText4);
@@ -477,19 +512,21 @@
 					 titleText5 = new PIXI.Text(
 					 	"Press X to quit",
 					 	//{font: "16px LCD Solid", fill: "red"}
-					 	{fontFamily: "LCD Solid, Courier New", fontSize: "16px", fill: "red"}
+					 	{fontFamily: "lcd_solidregular, Courier New", fontSize: "16px", fill: "red"}
 					 );
 					 titleText5.position.set(260, (stage.height / 2) + 185);
 					 titleScene.addChild(titleText5);
 
 					 //Title Ship selection
 					 shipNo = 1; //init ship no
-					 titleShip = new Sprite(resources["images/spaceship1.png"].texture);
-					 titleShip.position.set(310, (stage.height / 2) + 20);
-					 titleScene.addChild(titleShip);
+					 //titleShip = new Sprite(resources["images/spaceship1.png"].texture);
+					 //titleShip.position.set(310, (stage.height / 2) + 20);
+					 //titleScene.addChild(titleShip);
+					 initTitleShip(290, (stage.height / 2) + 5); //test
+
 
 					arrowLeft = new Sprite(resources["images/arrow-left.png"].texture);
-					arrowLeft.position.set(200, (stage.height / 2) + 35);
+					arrowLeft.position.set(200, (stage.height / 2) + 35, false);
 					titleScene.addChild(arrowLeft);
 
 					arrowRight = new Sprite(resources["images/arrow-right.png"].texture);
@@ -512,7 +549,7 @@
 					splashText = new PIXI.Text(
 						"HOLY MOTHERSHIP. Just look at those\n\naliens. Do you want those flying\n\n disks unload slimy creatures that\n\n would go and suck our brains or\n\n whatnot? No? Then get them\n\n           OUTTA SPACE!",
 						//{font:"28px LCD Solid", fill:"white"}
-						{fontFamily: "LCD Solid, Courier New", fontSize: "28px", fill: "white"}
+						{fontFamily: "lcd_solidregular, Courier New", fontSize: "28px", fill: "white"}
 					);
 					splashText.position.set(60, (stage.height / 2) + 130);
 					splashScene.addChild(splashText);	
@@ -577,8 +614,8 @@
 							
 							//if game is not in titlescreen
 							//move player using its velocity
-							player.x += player.vx;
-							player.y += player.vy;
+							player.x += playervx;//player.vx;
+							player.y += playervy;//player.vy;
 
 							//Clamp player pos
 							/*if(player.x <= 5){ //x axis
@@ -599,36 +636,82 @@
 
 							//player fire
 							if(firing){
-								pfire[0].x = player.x;
-								pfire[0].y = player.y;
-								pfire[0].vx = 0;
-								pfire[0].vy = 0;
-								pfire[0].visible = true;
+								if(shipNo === 1){
+									pfire[0].x = player.x + 25;
+									pfire[0].y = player.y + 40;
+									pfire[0].vx = 0;
+									pfire[0].vy = 0;
+									pfire[0].visible = true;
+								}
+								
+								if(shipNo === 2){ //test set 4 bullets pos
+									pfire[0].x = player.x + 5;
+									pfire[0].y = player.y;
+									pfire[0].vx = 0;
+									pfire[0].vy = 0;
+									pfire[0].visible = true;
+
+									pfire[1].x = player.x + 15;
+									pfire[1].y = player.y + 15;
+									pfire[1].vx = 0;
+									pfire[1].vy = 0;
+									pfire[1].visible = true;
+
+									pfire[2].x = player.x + 15;
+									pfire[2].y = player.y + 30;
+									pfire[2].vx = 0;
+									pfire[2].vy = 0;
+									pfire[2].visible = true;
+
+									pfire[3].x = player.x + 5;
+									pfire[3].y = player.y + 45;
+									pfire[3].vx = 0;
+									pfire[3].vy = 0;
+									pfire[3].visible = true;
+								}
 							}
 
 							//Fire collision check
-							if(pfire[0].visible === true){
-								pfire[0].x += 6;
-
-								/*var rand = Math.floor((Math.random() * 3) + 1);
-								if(rand === 1){
-									pfire[0].y += 0;
-									console.log("TEST1");
-								} 
-								if(rand === 2){
-									pfire[0].y += 1;
-									console.log("TEST2");
-								} 
-								if(rand === 3){
-									pfire[0].y -= 1;
-									console.log("TEST3");
-								}*/
+							if(shipNo === 1){
+								if(pfire[0].visible === true){
+									pfire[0].x += 6; //move player bullet forward
+									
+									/*var rand = Math.floor((Math.random() * 3) + 1);
+									if(rand === 1){
+										pfire[0].y += 0;
+										console.log("TEST1");
+									} 
+									if(rand === 2){
+										pfire[0].y += 1;
+										console.log("TEST2");
+									} 
+									if(rand === 3){
+										pfire[0].y -= 1;
+										console.log("TEST3");
+									}*/
+								}
 							}
+							
+							else if(shipNo === 2){ //test
+									pfire[0].x += 6;
+									pfire[1].x += 6;
+									pfire[2].x += 6;
+									pfire[3].x += 6;
+
+									for(var i = 0; i < 3; i++){
+										//pfire[i].x += 6;
+
+										if(pfire[i].x > 750){ //clamp bullet pos
+											pfire[i].visible = false;
+										}
+									}
+							}
+
 
 							if(efire[0].visible === true){
 								//move enemy fire forward
-								efire[0].x -= 5;
-								efire[0].y -= 0;
+								efire[0].x -= 4 + wavesNo;
+								//efire[0].y -= 0;
 
 								//clamp enemy fire
 								if(efire[0].x <= -15){
@@ -701,18 +784,38 @@
 								} 
 
 								//enemy hit by player fire
-								if(detectCollision(enemySpin[i], pfire[0])){
-									//if enemy is active
-									if(enemySpin[i].visible === true){
-										enemySpin[i].visible = false;
-										pfire[0].visible = false;
-										//perform explosion anim here
-										explode(enemySpin[i].x, enemySpin[i].y);
+								if(shipNo === 1){
+									if(detectCollision(enemySpin[i], pfire[0])){
+										//if enemy is active
+										if(enemySpin[i].visible === true){
+											enemySpin[i].visible = false;
+											pfire[0].visible = false;
+											//perform explosion anim here
+											explode(enemySpin[i].x, enemySpin[i].y);
 
-										playMusic(sfx2p, esfxtype.Hit); //enemy hit sfx
-										playMusic(sfx2p, esfxtype.Explode); //enemy explode sfx
+											playMusic(sfx2p, esfxtype.Hit); //enemy hit sfx
+											playMusic(sfx2p, esfxtype.Explode); //enemy explode sfx
+										}
 									}
 								}
+								else if(shipNo === 2){ //test
+									for(var k = 0; k < 3; k++){
+										if(detectCollision(enemySpin[i], pfire[k])){
+											//if enemy is active
+											if(enemySpin[i].visible === true){
+												enemySpin[i].visible = false;
+												pfire[k].visible = false;
+												//perform explosion anim here
+												explode(enemySpin[i].x, enemySpin[i].y);
+
+												playMusic(sfx2p, esfxtype.Hit); //enemy hit sfx
+												playMusic(sfx2p, esfxtype.Explode); //enemy explode sfx
+											}
+										}
+									}
+									
+								}	
+								
 
 								else{
 									//no collision
@@ -762,7 +865,7 @@
 				function explode(x, y){
 					var frames = [];
 
-					for(var i = 0; i < 33; i++){
+					for(var i = 0; i < 34; i++){
 						frames.push(Texture.fromFrame("images/explosion" + (i + 1) + ".png"));
 					}
 
@@ -799,6 +902,84 @@
 					enemySpin[id].play();
 
 					gameScene.addChild(enemySpin[id]);
+				}
+
+				//Player ship anim
+				function playerAnimate(x, y){
+					var frames = [];
+
+					if(shipNo === 1){
+						for(var i = 0; i < 3; i++){
+							frames.push(Texture.fromFrame("images/p1ship" + (i + 1) + ".png"));
+						}
+					}
+					else if(shipNo === 2){
+						for(var i = 0; i < 3; i++){
+							frames.push(Texture.fromFrame("images/p2ship" + (i + 1) + ".png"));
+						}
+					}
+
+					player = new PIXI.extras.MovieClip(frames);
+					player.position.set(x, y);
+					player.animationSpeed = 0.2;
+					player.loop = true;
+
+					player.play();
+
+					gameScene.addChild(player);
+				}
+
+				//Player ship title anim
+				function initTitleShip(x, y){
+					var frames = [];
+
+					if(shipNo === 1){
+						for(var i = 0; i < 3; i++){
+							frames.push(Texture.fromFrame("images/p1ship" + (i + 1) + ".png"));
+						}
+					}
+					else if(shipNo === 2){
+						for(var i = 0; i < 3; i++){
+							frames.push(Texture.fromFrame("images/p2ship" + (i + 1) + ".png"));
+						}
+					}
+
+				
+					titleShip = new PIXI.extras.MovieClip(frames); 
+					titleShip.position.set(x, y);
+					titleShip.animationSpeed = 0.2;
+					titleShip.loop = true;
+
+					titleShip.play();
+
+					titleScene.addChild(titleShip);
+					console.log("INIT TITLESHIP");
+				}
+
+				function changeTitleShip(){
+					var frames = [];
+
+					if(shipNo === 1){
+						for(var i = 0; i < 3; i++){
+							frames.push(Texture.fromFrame("images/p1ship" + (i + 1) + ".png"));
+						}
+					}
+					else if(shipNo === 2){
+						for(var i = 0; i < 3; i++){
+							frames.push(Texture.fromFrame("images/p2ship" + (i + 1) + ".png"));
+						}
+					}
+
+					titleShip.textures = frames;
+
+					//titleShip.position.set(290, (stage.height / 2) + 5);
+					/*if(shipNo === 1){
+						titleShip.position.y = ((stage.height / 2) + 5);
+					}
+					else if(shipNo === 2){
+						titleShip.position.y = ((stage.height / 2) + 20);
+					}*/
+
 				}
 
 				//enemy spin anim in startup splash
@@ -1000,7 +1181,13 @@
 					  vy = (r1.centerY) - (r2.centerY);
 
 					  //Figure out the combined half-widths and half-heights
-					  combinedHalfWidths = r1.halfWidth + (r2.halfWidth / 2);
+					  if(shipNo === 1){ //test
+					  		combinedHalfWidths = r1.halfWidth + (r2.halfWidth / 4);
+					  }
+					  else{
+					  		combinedHalfWidths = r1.halfWidth + (r2.halfWidth / 2);
+					  }
+					  
 					  combinedHalfHeights = r1.halfHeight + (r2.halfHeight / 2);
 
 					  //Check for a collision on the x axis
